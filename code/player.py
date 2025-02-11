@@ -46,23 +46,43 @@ class Player(pygame.sprite.Sprite):
         Player._id_counter = 0
 
     # utility functions
-    def compute_utility(self, task: Task):
-        return self.compute_utility_action(task) + self.compute_utility_distance(task)
+    def compute_cost(self, action:float, distance:float):
+        return action + distance
+
+    def bid(self, task: Task):
+        action = self.compute_cost_action(task)
+        distance = self.compute_cost_distance(task)
+        total_cost = self.compute_cost(action, distance)
+
+        utility = task.reward - total_cost
+
+        if utility > 0:
+            return utility
+        else:
+            return 0
     
-    def compute_utility_distance(self, task: Task):
+    def compute_cost_distance(self, task: Task):
         character_pos = (self.rect.x, self.rect.y)
         task_pos = (task.item.rect.x, task.item.rect.y)
 
         path = self.find_path(character_pos, task_pos)
 
-        if path is not None and len(path) > 0:
-            return -len(path)
-        else:
-            return -8000
+        for other_task in self.tasks:
+            if other_task != task:
+                other_task_pos = (other_task.item.rect.x, other_task.item.rect.y)
+                other_path = self.find_path(other_task_pos, task_pos)
 
-    def compute_utility_action(self, task: Task):
+                if len(path) > len(other_path):
+                    path = other_path
+
+        if path is not None and len(path) > 0:
+            return len(path)
+        else:
+            return 8000
+
+    def compute_cost_action(self, task: Task):
         item_type = task.item.type
-        return - self.damage_per_blow[item_type]
+        return 100/self.damage_per_blow[item_type]
 
     # tasks functions
     def start_task(self, task: Task):
@@ -93,13 +113,24 @@ class Player(pygame.sprite.Sprite):
     def complete_task(self):
         self.current_task.setStatus(TaskStatusEnum.DONE.name)
         self.current_task = None
-        self.tasks.pop(0)
 
     def start_next_task(self):
-        if len(self.tasks) > 0 and self.game_started:
-            next_task = self.tasks[0]
-            next_task.utility = self.compute_utility(next_task)
+        todo_tasks = [e for e in self.tasks if e.status == TaskStatusEnum.TODO.name]
 
+
+        if len(todo_tasks) > 0 and self.game_started:
+            character_pos = (self.rect.x, self.rect.y)
+            shortest_distance = 1000
+
+            for task in todo_tasks:
+                task_pos = (task.item.rect.x, task.item.rect.y)
+                
+                task_distance = len(self.find_path(character_pos, task_pos))
+                if task_distance < shortest_distance:
+                    shortest_distance = task_distance
+                    next_task = task
+
+            next_task.cost = self.compute_cost(self.compute_cost_action(task), - shortest_distance)
             self.start_task(next_task)
 
     # movements functions
@@ -143,7 +174,7 @@ class Player(pygame.sprite.Sprite):
 
     # loop update function
     def update(self, dt:int):
-        if self.current_task is None:
+        if self.current_task is None and self.game_started:
             self.start_next_task()
         self.move()
         self.perform_task(dt)

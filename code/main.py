@@ -16,7 +16,8 @@ class Game:
     def __init__(self):
         # Setup
         pygame.init()
-        self.display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+
+        self.display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.RESIZABLE)
         pygame.display.set_caption('PIR')
         self.clock = pygame.time.Clock()
         self.running = True
@@ -104,7 +105,7 @@ class Game:
         for obj in map.get_layer_by_name('Items'):
             item = Item(obj.properties["type"], (obj.x, obj.y), obj.image, (self.all_sprites))
             ItemInfo(item, self.all_sprites)
-            task = Task(item, "cut")
+            task = Task(item, "cut", 1000)
             self.planner.tasks.append(task)
 
         for obj in map.get_layer_by_name('Merchants'):

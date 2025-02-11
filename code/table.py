@@ -29,7 +29,7 @@ class Table:
                 self.font.render(str(task.item.id), False, 'Black'),
                 self.font.render(str(task.status), False, 'Black'),
                 self.font.render(str(task.assigned_to), False, 'Black'),
-                self.font.render(str(task.utility), False, 'Black'),
+                self.font.render(str(task.cost), False, 'Black'),
             ]
             self.text_surfs.append(row)
     

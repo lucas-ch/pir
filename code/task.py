@@ -7,12 +7,13 @@ class TaskStatusEnum(Enum):
     DONE = 3
 
 class Task:
-    def __init__(self, item:Item, type:str):
+    def __init__(self, item:Item, type:str, reward: int):
         self.status = TaskStatusEnum.TODO.name
         self.item = item
         self.type = type
         self.assigned_to = None
-        self.utility = 0
+        self.reward = reward
+        self.cost = 0
     
     def setStatus(self, status:str):
         self.status = status
