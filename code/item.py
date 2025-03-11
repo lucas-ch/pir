@@ -15,6 +15,7 @@ class Item(pygame.sprite.Sprite):
         self.image = surf
         self.rect = self.image.get_frect(topleft = pos)
         self.current_health = 100
+        self.color = (0, 0, 0)
 
     @classmethod
     def reset_counter(cls):

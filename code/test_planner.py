@@ -93,5 +93,31 @@ class TestGreedy(unittest.TestCase):
         self.assertEqual(player2.tasks[0], task3)
         self.assertEqual(player3.tasks[0], task2)
 
+    def test_assign_tasks_dias(self):
+        planner = Planner()
+
+        surf_tree = pygame.image.load('graphics/objects/tree_medium.png')
+
+        item1 = Item("tree", (0.0, 500.0), surf_tree, [])
+        item2 = Item("tree", (300.0, 500.0), surf_tree, [])
+        item3 = Item("tree", (300.0, 350.0), surf_tree, [])
+
+        task1 = Task(item1, "cut", 100)
+        task2 = Task(item2, "cut", 100)
+        task3 = Task(item3, "cut", 100)
+
+        tasks = [task1, task3, task2]
+        
+        walkability_matrix = [[1 for _ in range(1000)] for _ in range(1000)]
+        surf_player = pygame.image.load('graphics/character/down/0.png')
+        player1 = Player((0.0, 0.0), surf_player, [], walkability_matrix, False)
+        player2 = Player((300.0, 0.0), surf_player, [], walkability_matrix, False)
+
+        players = [player1, player2]
+
+        planner.assign_tasks_dias(tasks, players)
+        self.assertEqual(len(player1.tasks), 0)
+        self.assertEqual(len(player2.tasks), 3)
+
 if __name__ == "__main__":
     unittest.main()

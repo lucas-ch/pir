@@ -180,6 +180,6 @@ class Menu:
     def update(self):
         self.input()
         if self.display_menu:
-            self.draw_table()
+            #self.draw_table()
             self.draw_buttons()
             self.draw_dropdowns()

@@ -4,10 +4,11 @@ from task import *
 import pygame
 from pathfinding.core.grid import Grid, GridNode
 from pathfinding.finder.a_star import AStarFinder
+import numpy as np
 
 class Player(pygame.sprite.Sprite):
     _id_counter = 0
-
+    _colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 255)]
     def __init__(self,
                  pos: tuple[int],
                  surf:pygame.Surface,
@@ -27,17 +28,25 @@ class Player(pygame.sprite.Sprite):
             "tree": 20
         }
         self.blow_per_second = 3
+        self.reward_factor = 0.95
 
         # graphics
         self.image = surf
         self.rect = self.image.get_frect(topleft=pos)
+        self.color = Player._colors[self.id]
 
         # game initialisation
         self.game_started: bool = game_started
         self.walkability_matrix = walkability_matrix
+        self.grid = Grid(matrix=self.walkability_matrix)
+
         self.tasks: list[Task] = []
         self.current_task: Task = None
         self.current_path: list = []
+
+        #statistics
+        self.planned_path: list = []
+        self.total_utility = 0
 
         self.task_timer = 0  # Timer for health reduction
 
@@ -45,7 +54,30 @@ class Player(pygame.sprite.Sprite):
     def reset_counter(cls):
         Player._id_counter = 0
 
+    def assign_task(self, task: Task):
+        task.item.color = self.color
+        self.tasks.append(task)
+        self.planned_path = self.compute_shortest_path(self.tasks.copy())
+        self.total_utility = self.compute_total_utility()
+
+    def remove_task(self, task:Task):
+        self.tasks.remove(task)
+        task.item.color = (255, 255, 255)
+        self.planned_path = self.compute_shortest_path(self.tasks.copy())
+        self.total_utility = self.compute_total_utility()
+
     # utility functions
+    def compute_total_utility(self):
+        total_distance = len(sum(self.planned_path, []))
+
+        total_reward = 0
+        total_action_cost = 0
+        for i, task in enumerate(self.tasks):
+            total_reward += (task.reward)*(self.reward_factor ** i)
+            total_action_cost += self.compute_cost_action(task)
+
+        return total_reward - total_action_cost - total_distance
+
     def compute_cost(self, action:float, distance:float):
         return action + distance
 
@@ -54,31 +86,75 @@ class Player(pygame.sprite.Sprite):
         distance = self.compute_cost_distance(task)
         total_cost = self.compute_cost(action, distance)
 
-        utility = task.reward - total_cost
+        reward = task.reward * (self.reward_factor ** (len(self.tasks)))
+
+        utility = reward - total_cost
 
         if utility > 0:
             return utility
         else:
+            return -8000
+
+    def compute_revenue_task(self, task: Task):
+        if task not in self.tasks:
             return 0
+
+        list_tasks = self.tasks.copy()
+        list_tasks_without = list_tasks.copy()
+        list_tasks_without.remove(task)
+
+        shortest_path = self.compute_shortest_path(list_tasks)
+        shortest_path_without = self.compute_shortest_path(list_tasks_without)
+
+        distance_task = len(sum(shortest_path, [])) - len(sum(shortest_path_without, [])) - 1
+
+        reward = task.reward * ( self.reward_factor ** (len(self.tasks) - 1))
+        revenue_task = reward - distance_task - self.compute_cost_action(task)
+
+        return revenue_task
     
     def compute_cost_distance(self, task: Task):
+        if task in self.tasks:
+            return 0
+
+        shortest_path = self.compute_shortest_path(self.tasks.copy())
+
+        task_list_with_new_task = self.tasks.copy()
+        task_list_with_new_task.append(task)
+        shortest_path_with_new_task = self.compute_shortest_path(task_list_with_new_task)
+
+        distance_task = len(sum(shortest_path_with_new_task, [])) - len(sum(shortest_path, [])) - 1
+
+        return distance_task
+
+    def find_closest_task(self, character_pos, tasks: list[Task]):
+        closest_task = tasks[0]
+        shortest_distance = 8000
+
+        for task in tasks:
+            task_pos = (task.item.rect.x, task.item.rect.y)
+                
+            task_distance = len(self.find_path(character_pos, task_pos))
+            if task_distance < shortest_distance:
+                shortest_distance = task_distance
+                closest_task = task
+        
+        return closest_task
+    
+    def compute_shortest_path(self, tasks: list[Task]):
         character_pos = (self.rect.x, self.rect.y)
-        task_pos = (task.item.rect.x, task.item.rect.y)
+        total_path = []
 
-        path = self.find_path(character_pos, task_pos)
+        while len(tasks) > 0:
+            closest_task = self.find_closest_task(character_pos, tasks)
+            closest_task_pos = (closest_task.item.rect.x, closest_task.item.rect.y)
+            path = self.find_path(character_pos, closest_task_pos)
+            total_path.append(path)
 
-        for other_task in self.tasks:
-            if other_task != task:
-                other_task_pos = (other_task.item.rect.x, other_task.item.rect.y)
-                other_path = self.find_path(other_task_pos, task_pos)
+            tasks.remove(closest_task)
+            character_pos = closest_task_pos
 
-                if len(path) > len(other_path):
-                    path = other_path
-
-        if path is not None and len(path) > 0:
-            return len(path)
-        else:
-            return 8000
+        return total_path
 
     def compute_cost_action(self, task: Task):
         item_type = task.item.type
@@ -135,12 +211,11 @@ class Player(pygame.sprite.Sprite):
 
     # movements functions
     def find_path(self, a: tuple, b: tuple):
-        grid = Grid(matrix=self.walkability_matrix)
-        start = grid.node(int(a[0] / TILE_SIZE), int(a[1] / TILE_SIZE))
-        end = grid.node(int(b[0] / TILE_SIZE), int(b[1] / TILE_SIZE))
+        start = self.grid.node(int(a[0] / TILE_SIZE), int(a[1] / TILE_SIZE))
+        end = self.grid.node(int(b[0] / TILE_SIZE), int(b[1] / TILE_SIZE))
 
         finder = AStarFinder()
-        path, _ = finder.find_path(start, end, grid)
+        path, _ = finder.find_path(start, end, self.grid)
 
         return path
 

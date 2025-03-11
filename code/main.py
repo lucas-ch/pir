@@ -1,6 +1,8 @@
+import threading
 from settings import *
 from player import *
 from player_info import *
+from player_path import *
 import pygame
 from sprites import *
 from item import *
@@ -30,6 +32,7 @@ class Game:
         # Groups 
         self.all_sprites = pygame.sprite.Group()
         self.players: pygame.sprite.Group[Player] = pygame.sprite.Group()
+        self.players_path = pygame.sprite.Group()
 
         # Planner
         self.assignement_method = AssignMethodsEnum.RANDOM.name
@@ -47,12 +50,17 @@ class Game:
             # dt
             dt = self.clock.tick(60)
 
-            # assign task when needed
             if self.assign_tasks_flag:
-                self.planner.assign_tasks(self.planner.tasks, list(self.players), self.assignement_method)
                 self.assign_tasks_flag = False
-                self.menu.display_compute = False
-                self.menu.enable_start = True
+                self.menu.display_compute = True  # Affiche un indicateur de calcul en cours
+
+                def assign_tasks_thread():
+                    self.planner.assign_tasks(self.planner.tasks, list(self.players), self.assignement_method)
+                    self.menu.display_compute = False  # Cache l'indicateur
+                    self.menu.enable_start = True  # Active le bouton Start
+
+                threading.Thread(target=assign_tasks_thread, daemon=True).start()
+
 
             # event loop 
             for event in pygame.event.get():
@@ -83,15 +91,21 @@ class Game:
 
             # draw
             self.display_surface.fill('black')
+
+
             self.all_sprites.draw(self.display_surface)
-            
+
+            # Dessine les trajets des joueurs
+            for player_path in self.players_path:
+                player_path.update(self.display_surface)
+
             self.menu.update()
             pygame.display.update()
 
         pygame.quit()
     
     def setup(self):
-        map = load_pygame(os.path.join('data', 'level1.tmx'))
+        map = load_pygame(os.path.join('data', 'level4.tmx'))
         self.walkability_matrix = [[0 for _ in range(map.width)] for _ in range(map.height)]
 
         for x, y, image in map.get_layer_by_name('Grass').tiles():
@@ -105,15 +119,17 @@ class Game:
         for obj in map.get_layer_by_name('Items'):
             item = Item(obj.properties["type"], (obj.x, obj.y), obj.image, (self.all_sprites))
             ItemInfo(item, self.all_sprites)
-            task = Task(item, "cut", 1000)
+            task = Task(item, "cut", 100)
             self.planner.tasks.append(task)
 
         for obj in map.get_layer_by_name('Merchants'):
             player = PlayerWaterPhobic((obj.x, obj.y), obj.image, (self.all_sprites, self.players), self.walkability_matrix, False)
             PlayerInfo(player, self.all_sprites)
+            PlayerPath(player, self.players_path)
         for obj in map.get_layer_by_name('Characters'):
             player = PlayerWaterResistant((obj.x, obj.y), obj.image, (self.all_sprites, self.players), self.walkability_matrix, False)
             PlayerInfo(player, self.all_sprites)
+            PlayerPath(player, self.players_path)
 
         self.menu.toggle_menu()
         self.menu.tasks = self.planner.tasks

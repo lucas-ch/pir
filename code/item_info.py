@@ -13,7 +13,7 @@ class ItemInfo(pygame.sprite.Sprite):
         self.max_health = 100
         self.health_bar_width = 50
         self.health_bar_height = 5
-        self.health_bar_color = (0, 255, 0)  # Green for health
+        self.health_bar_color = item.color
 
         # Create a surface for rendering the item info
         self.image = pygame.Surface((max(item.rect.width, self.health_bar_width), 40), pygame.SRCALPHA)  # Transparent background
@@ -33,6 +33,7 @@ class ItemInfo(pygame.sprite.Sprite):
         # Render the health bar
         health_ratio = self.item.current_health / self.max_health
         current_health_width = int(self.health_bar_width * health_ratio)
+        self.health_bar_color = self.item.color
         pygame.draw.rect(self.image, (255, 0, 0), (0, 0, self.health_bar_width, self.health_bar_height))  # Red background
         pygame.draw.rect(self.image, self.health_bar_color, (0, 0, current_health_width, self.health_bar_height))  # Green foreground
 

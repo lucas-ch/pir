@@ -9,6 +9,7 @@ class AssignMethodsEnum(Enum):
     RANDOM = 1
     RANDOM_POSSIBLE = 2
     SSI = 3
+    DIAS = 4
 
 class Planner:
     def __init__(self):
@@ -23,7 +24,7 @@ class Planner:
         return False
 
     def assign_task(self, task: Task, player:Player):
-        player.tasks.append(task)
+        player.assign_task(task)
         task.assigned_to = player.id
 
     def assign_tasks_random(self, tasks:list[Task], players:list[Player]):
@@ -71,15 +72,17 @@ class Planner:
 
     def assign_tasks_ssi(self, tasks:list[Task], players:list[Player]):
         for task in tasks:
-            min_utility = 0
+            highest_bid = 0
             winner:Player
             for player in players:
-                utility = player.bid(task)
-                if utility > min_utility:
-                    min_utility = utility
+                bid = player.bid(task)
+                print(f'task {task.item.id}  player {player.id} bid {bid}')
+                if bid > highest_bid:
+                    highest_bid = bid
                     winner = player
             
-            if winner:
+            if winner is not None:
+                print(f'task {task.item.id}  goes to player {winner.id}')
                 self.assign_task(task, winner)
 
     def assign_tasks_st_sr_ia_greedy(self, tasks:list[Task], players:list[Player]):
@@ -168,10 +171,68 @@ class Planner:
                 player_assigned = task_assignment.argmax()
                 self.assign_task(tasks[i], players[player_assigned])
 
+    def compute_total_utility(self, players:list[Player]):
+        total_utility = 0
+        for player in players:
+            total_utility += player.total_utility
+
+        return total_utility
+
+    def assign_tasks_dias(self, tasks:list[Task], players:list[Player]):
+            self.assign_tasks_random(tasks, players)
+            total_utility = self.compute_total_utility(players)
+            total_utility_evolution = [total_utility]
+            print(f'total_utility {total_utility} ')
+
+            everyone_happy = 0
+            round_number=0
+            while everyone_happy == 0 and round_number < 10:
+                round_number += 1
+                print(f'round {round_number}')
+                everyone_happy = 1
+                for player in players:
+                    for task in player.tasks:
+                        revenue_task = player.compute_revenue_task(task)
+
+                        winning_player = None
+                        highest_bid = revenue_task
+
+                        for other_player in players:
+                            if other_player.id != player.id:
+                                bid = other_player.bid(task)
+
+                                if bid > highest_bid:
+                                    winning_player = other_player
+                                    highest_bid = bid
+                    
+                        if winning_player is not None:
+                            everyone_happy = 0
+                            print(f'player {winning_player.id} bid {highest_bid} and player {player.id} value is {revenue_task}')
+                            print(f'utility of player {winning_player.id} was {winning_player.total_utility}')
+                            print(f'utility of player {player.id} was {player.total_utility}')
+
+                            player.remove_task(task)
+                            self.assign_task(task, winning_player)
+                            print(f'task {task.item.id} assigned to player {winning_player.id}')
+                            print(f'utility of player {winning_player.id} is now {winning_player.total_utility}')
+                            print(f'utility of player {player.id} is now {player.total_utility}')
+
+                            total_utility = self.compute_total_utility(players)
+                            print(f'total_utility {total_utility} ')
+                            total_utility_evolution.append(total_utility)
+            
+            print(total_utility_evolution)
+
+
     def assign_tasks(self, tasks:list[Task], players:list[Player], method: str):
+        for player in players:
+            player.tasks = []
+
         if method == AssignMethodsEnum.RANDOM.name:
             self.assign_tasks_random(tasks, players)
         if method == AssignMethodsEnum.RANDOM_POSSIBLE.name:
             self.assign_tasks_random_possible(tasks, players)
         if method == AssignMethodsEnum.SSI.name:
             self.assign_tasks_ssi(tasks, players)
+        if method == AssignMethodsEnum.DIAS.name:
+            self.assign_tasks_dias(tasks, players)
