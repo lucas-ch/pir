@@ -14,7 +14,8 @@ class Player(pygame.sprite.Sprite):
                  surf:pygame.Surface,
                  groups:list[pygame.sprite.Group],
                  walkability_matrix:list[list[int]],
-                 game_started:bool):
+                 game_started:bool,
+                 reward_factor=1):
         super().__init__(groups)
 
         # id
@@ -28,7 +29,7 @@ class Player(pygame.sprite.Sprite):
             "tree": 20
         }
         self.blow_per_second = 3
-        self.reward_factor = 0.95
+        self.reward_factor = reward_factor
 
         # graphics
         self.image = surf
@@ -47,6 +48,7 @@ class Player(pygame.sprite.Sprite):
         #statistics
         self.planned_path: list = []
         self.total_utility = 0
+        self.communication_number = 0
 
         self.task_timer = 0  # Timer for health reduction
 
@@ -82,6 +84,7 @@ class Player(pygame.sprite.Sprite):
         return action + distance
 
     def bid(self, task: Task):
+        self.communication_number += 1
         action = self.compute_cost_action(task)
         distance = self.compute_cost_distance(task)
         total_cost = self.compute_cost(action, distance)
@@ -256,12 +259,12 @@ class Player(pygame.sprite.Sprite):
 
 # specific players class 
 class PlayerWaterResistant(Player):
-    def __init__(self, pos, surf, groups, walkability_matrix, game_started):
-        super().__init__(pos, surf, groups, walkability_matrix, game_started)
+    def __init__(self, pos, surf, groups, walkability_matrix, game_started, reward_factor):
+        super().__init__(pos, surf, groups, walkability_matrix, game_started, reward_factor)
         self.speed = 10
 
 class PlayerWaterPhobic(Player):
-    def __init__(self, pos, surf, groups, walkability_matrix, game_started):
+    def __init__(self, pos, surf, groups, walkability_matrix, game_started, reward_factor):
         walkability_matrix = [[0 if value == 2 else value for value in row] for row in walkability_matrix]
-        super().__init__(pos, surf, groups, walkability_matrix, game_started)
+        super().__init__(pos, surf, groups, walkability_matrix, game_started, reward_factor)
         self.speed = 20

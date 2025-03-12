@@ -73,17 +73,17 @@ class Planner:
     def assign_tasks_ssi(self, tasks:list[Task], players:list[Player]):
         for task in tasks:
             highest_bid = 0
-            winner:Player
+            winner:Player = None
             for player in players:
                 bid = player.bid(task)
-                print(f'task {task.item.id}  player {player.id} bid {bid}')
                 if bid > highest_bid:
                     highest_bid = bid
                     winner = player
             
             if winner is not None:
-                print(f'task {task.item.id}  goes to player {winner.id}')
                 self.assign_task(task, winner)
+        
+        return []
 
     def assign_tasks_st_sr_ia_greedy(self, tasks:list[Task], players:list[Player]):
         if len(tasks) > len(players):
@@ -178,17 +178,27 @@ class Planner:
 
         return total_utility
 
-    def assign_tasks_dias(self, tasks:list[Task], players:list[Player]):
-            self.assign_tasks_random(tasks, players)
+    def compute_total_distance(self, players:list[Player]):
+        total_distance = 0
+        for player in players:
+            total_distance += len(sum(player.planned_path, []))
+
+        return total_distance
+
+    def assign_tasks_dias(self, tasks:list[Task], players:list[Player], nb_round:int, random: bool):
+            if random:
+                self.assign_tasks_random_possible(tasks, players)
+            else:       
+                self.assign_tasks_ssi(tasks, players)
             total_utility = self.compute_total_utility(players)
             total_utility_evolution = [total_utility]
-            print(f'total_utility {total_utility} ')
+            total_distance = self.compute_total_distance(players)
+            total_distance_evolution = [total_distance]
 
             everyone_happy = 0
             round_number=0
-            while everyone_happy == 0 and round_number < 10:
+            while everyone_happy == 0 and round_number < nb_round:
                 round_number += 1
-                print(f'round {round_number}')
                 everyone_happy = 1
                 for player in players:
                     for task in player.tasks:
@@ -207,32 +217,29 @@ class Planner:
                     
                         if winning_player is not None:
                             everyone_happy = 0
-                            print(f'player {winning_player.id} bid {highest_bid} and player {player.id} value is {revenue_task}')
-                            print(f'utility of player {winning_player.id} was {winning_player.total_utility}')
-                            print(f'utility of player {player.id} was {player.total_utility}')
 
                             player.remove_task(task)
                             self.assign_task(task, winning_player)
-                            print(f'task {task.item.id} assigned to player {winning_player.id}')
-                            print(f'utility of player {winning_player.id} is now {winning_player.total_utility}')
-                            print(f'utility of player {player.id} is now {player.total_utility}')
 
                             total_utility = self.compute_total_utility(players)
-                            print(f'total_utility {total_utility} ')
                             total_utility_evolution.append(total_utility)
+
+                            total_distance = self.compute_total_distance(players)
+                            total_distance_evolution.append(total_distance)
             
-            print(total_utility_evolution)
+            return total_utility_evolution, total_distance_evolution
 
 
-    def assign_tasks(self, tasks:list[Task], players:list[Player], method: str):
+
+    def assign_tasks(self, tasks:list[Task], players:list[Player], method: str, nb_round=10, random = False):
         for player in players:
             player.tasks = []
 
         if method == AssignMethodsEnum.RANDOM.name:
-            self.assign_tasks_random(tasks, players)
+            return self.assign_tasks_random(tasks, players)
         if method == AssignMethodsEnum.RANDOM_POSSIBLE.name:
-            self.assign_tasks_random_possible(tasks, players)
+            return self.assign_tasks_random_possible(tasks, players)
         if method == AssignMethodsEnum.SSI.name:
-            self.assign_tasks_ssi(tasks, players)
+            return self.assign_tasks_ssi(tasks, players)
         if method == AssignMethodsEnum.DIAS.name:
-            self.assign_tasks_dias(tasks, players)
+            return self.assign_tasks_dias(tasks, players, nb_round, random)

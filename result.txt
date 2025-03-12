@@ -1,0 +1,87 @@
+[
+    {
+        "id": 0,
+        "assignement_method": "SSI",
+        "nb_round_max": 10,
+        "communication_number": 27,
+        "total_utility": 920.1384375,
+        "total_distance": 270,
+        "nb_tasks_done": 9,
+        "tasks_stats": [
+            0,
+            5
+        ],
+        "reward_factor": 0.95,
+        "random_init": true,
+        "evolution": [],
+        "resolution_time": 15.540401458740234
+    },
+    {
+        "id": 1,
+        "assignement_method": "SSI",
+        "nb_round_max": 10,
+        "communication_number": 27,
+        "total_utility": 884.5321875,
+        "total_distance": 327,
+        "nb_tasks_done": 9,
+        "tasks_stats": [
+            1,
+            5
+        ],
+        "reward_factor": 0.95,
+        "random_init": true,
+        "evolution": [],
+        "resolution_time": 15.14718222618103
+    },
+    {
+        "id": 2,
+        "assignement_method": "SSI",
+        "nb_round_max": 10,
+        "communication_number": 27,
+        "total_utility": 929.85625,
+        "total_distance": 302,
+        "nb_tasks_done": 9,
+        "tasks_stats": [
+            2,
+            4
+        ],
+        "reward_factor": 0.95,
+        "random_init": true,
+        "evolution": [],
+        "resolution_time": 15.873878002166748
+    },
+    {
+        "id": 3,
+        "assignement_method": "SSI",
+        "nb_round_max": 10,
+        "communication_number": 27,
+        "total_utility": 857.1384375,
+        "total_distance": 333,
+        "nb_tasks_done": 9,
+        "tasks_stats": [
+            0,
+            5
+        ],
+        "reward_factor": 0.95,
+        "random_init": true,
+        "evolution": [],
+        "resolution_time": 20.566916942596436
+    },
+    {
+        "id": 4,
+        "assignement_method": "SSI",
+        "nb_round_max": 10,
+        "communication_number": 27,
+        "total_utility": 948.2243281249999,
+        "total_distance": 244,
+        "nb_tasks_done": 9,
+        "tasks_stats": [
+            1,
+            6
+        ],
+        "reward_factor": 0.95,
+        "random_init": true,
+        "evolution": [],
+        "resolution_time": 18.97694444656372
+    }
+]
