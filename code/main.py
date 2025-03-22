@@ -31,6 +31,7 @@ class Game:
 
         # Groups 
         self.all_sprites = pygame.sprite.Group()
+        self.info = pygame.sprite.Group()
         self.players: pygame.sprite.Group[Player] = pygame.sprite.Group()
         self.players_path = pygame.sprite.Group()
 
@@ -94,6 +95,9 @@ class Game:
 
 
             self.all_sprites.draw(self.display_surface)
+            self.info.draw(self.display_surface)
+
+
 
             # Dessine les trajets des joueurs
             for player_path in self.players_path:
@@ -105,7 +109,7 @@ class Game:
         pygame.quit()
     
     def setup(self):
-        map = load_pygame(os.path.join('data', 'level4.tmx'))
+        map = load_pygame(os.path.join('data', 'level5.tmx'))
         self.walkability_matrix = [[0 for _ in range(map.width)] for _ in range(map.height)]
 
         for x, y, image in map.get_layer_by_name('Grass').tiles():
@@ -118,7 +122,7 @@ class Game:
 
         for obj in map.get_layer_by_name('Items'):
             item = Item(obj.properties["type"], (obj.x, obj.y), obj.image, (self.all_sprites))
-            ItemInfo(item, self.all_sprites)
+            ItemInfo(item, (self.all_sprites, self.info))
             task = Task(item, "cut", 100)
             self.planner.tasks.append(task)
 

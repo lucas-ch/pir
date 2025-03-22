@@ -8,7 +8,7 @@ import numpy as np
 
 class Player(pygame.sprite.Sprite):
     _id_counter = 0
-    _colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 255)]
+    _colors = [(255, 0, 0), (0, 0, 255), (0, 0, 0)]
     def __init__(self,
                  pos: tuple[int],
                  surf:pygame.Surface,
@@ -28,7 +28,7 @@ class Player(pygame.sprite.Sprite):
             "tree": 20
         }
         self.blow_per_second = 3
-        self.reward_factor = 0.95
+        self.reward_factor = 0.9
 
         # graphics
         self.image = surf

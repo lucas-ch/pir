@@ -6,7 +6,7 @@ class PlayerInfo(pygame.sprite.Sprite):
     def __init__(self, player: Player, groups: list[pygame.sprite.Group]):
         super().__init__(groups)  
         self.player = player
-        self.font = pygame.font.Font(os.path.join('font', 'LycheeSoda.ttf'), 20)
+        self.font = pygame.font.Font(os.path.join('font', 'LycheeSoda.ttf'), 30)
         self.color = 'Black'
 
         # Définition des dimensions de la barre

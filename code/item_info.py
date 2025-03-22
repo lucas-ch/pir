@@ -6,7 +6,7 @@ class ItemInfo(pygame.sprite.Sprite):
     def __init__(self, item: Item, groups:list[pygame.sprite.Group]):
         super().__init__(groups)  # Initialize the sprite and add to groups if provided
         self.item = item
-        self.font = pygame.font.Font(os.path.join('font', 'LycheeSoda.ttf'), 20)
+        self.font = pygame.font.Font(os.path.join('font', 'LycheeSoda.ttf'), 30)
         self.color = 'Black'
 
         # Health attributes

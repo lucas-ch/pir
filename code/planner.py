@@ -179,7 +179,7 @@ class Planner:
         return total_utility
 
     def assign_tasks_dias(self, tasks:list[Task], players:list[Player]):
-            self.assign_tasks_random(tasks, players)
+            self.assign_tasks_ssi(tasks, players)
             total_utility = self.compute_total_utility(players)
             total_utility_evolution = [total_utility]
             print(f'total_utility {total_utility} ')
