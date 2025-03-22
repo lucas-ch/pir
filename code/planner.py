@@ -1,3 +1,4 @@
+import json
 from player import *
 from task import *
 import random
@@ -177,6 +178,14 @@ class Planner:
             total_utility += player.total_utility
 
         return total_utility
+    
+    def compute_planned_time(self, players:list[Player]):
+        planned_time = 0
+        for player in players:
+            if player.planned_time > planned_time:
+                planned_time = player.planned_time
+
+        return planned_time
 
     def compute_total_distance(self, players:list[Player]):
         total_distance = 0
@@ -186,14 +195,30 @@ class Planner:
         return total_distance
 
     def assign_tasks_dias(self, tasks:list[Task], players:list[Player], nb_round:int, random: bool):
+
+            self.assign_tasks_ssi(tasks, players)
+            total_utility = self.compute_total_utility(players)
+            total_distance = self.compute_total_distance(players)
+            planned_time = self.compute_planned_time(players)
+
+            result = AssignResult()
+            result.ssi_init_distance = total_distance
+            result.ssi_init_planned_time = planned_time
+            result.ssi_init_utility = total_utility
+
             if random:
                 self.assign_tasks_random_possible(tasks, players)
-            else:       
-                self.assign_tasks_ssi(tasks, players)
-            total_utility = self.compute_total_utility(players)
-            total_utility_evolution = [total_utility]
-            total_distance = self.compute_total_distance(players)
+                total_utility = self.compute_total_utility(players)
+                total_distance = self.compute_total_distance(players)
+                planned_time = self.compute_planned_time(players)
+
+                result.random_init_distance = total_distance
+                result.random_init_planned_time= planned_time
+                result.random_init_utility = total_utility
+
             total_distance_evolution = [total_distance]
+            total_utility_evolution = [total_utility]
+            planned_time_evolution = [planned_time]
 
             everyone_happy = 0
             round_number=0
@@ -226,8 +251,15 @@ class Planner:
 
                             total_distance = self.compute_total_distance(players)
                             total_distance_evolution.append(total_distance)
-            
-            return total_utility_evolution, total_distance_evolution
+
+                            planned_time = self.compute_planned_time(players)
+                            planned_time_evolution.append(planned_time)
+
+            result.planned_time_evolution = planned_time_evolution
+            result.total_distance_evolution = total_distance_evolution
+            result.total_utility_evolution = total_utility_evolution
+
+            return result
 
 
 
@@ -243,3 +275,21 @@ class Planner:
             return self.assign_tasks_ssi(tasks, players)
         if method == AssignMethodsEnum.DIAS.name:
             return self.assign_tasks_dias(tasks, players, nb_round, random)
+
+class AssignResult:
+    def __init__(self):
+        self.random_init_utility = 0
+        self.random_init_distance = 0
+        self.random_init_planned_time = 0
+        self.ssi_init_utility = 0
+        self.ssi_init_distance = 0
+        self.ssi_init_planned_time= 0
+        self.total_utility_evolution = 0
+        self.total_distance_evolution = 0
+        self.planned_time_evolution = 0
+
+    def to_dict(self):
+        return self.__dict__
+
+    def __repr__(self):
+        return json.dumps(self.to_dict(), indent=4)

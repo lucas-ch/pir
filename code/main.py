@@ -21,20 +21,15 @@ class GameResult:
         self.id = id
         self.assignement_method = assignement_method
         self.nb_round_max = nb_round
-        self.resolution_time: 0
         self.communication_number = 0
-        self.total_utility = 0
-        self.total_distance = 0
         self.nb_tasks_done = 0
         self.tasks_stats = (0, 0)
         self.reward_factor = reward_factor
         self.random_init = random_init
-        self.evolution = []
+        self.result = None
 
     def compute_assignment_result(self, players: list[Player], tasks: list[Task]):
         self.communication_number = self.compute_communication_number(players)
-        self.total_utility = self.compute_total_utility(players)
-        self.total_distance = self.compute_total_distance(players)
         self.nb_tasks_done = self.compute_tasks_done(tasks)
         self.tasks_stats = self.compute_tasks_stats(players)
 
@@ -54,13 +49,6 @@ class GameResult:
             if len(player.tasks) < min_task:
                 min_task = len(player.tasks)
         return (min_task, max_task)
-
-    def compute_total_utility(self, players: list[Player]):
-        total_utility = 0
-        for player in players:
-            total_utility += player.total_utility
-
-        return total_utility
     
     def compute_communication_number(self, players: list[Player]):
         communication_number = 0
@@ -68,13 +56,6 @@ class GameResult:
             communication_number += player.communication_number
 
         return communication_number
-
-    def compute_total_distance(self, players: list[Player]):
-        distance = 0
-        for player in players:
-            distance += len(sum(player.planned_path, []))
-
-        return distance
 
     def __repr__(self):
         return json.dumps(self.__dict__, indent=4)
@@ -85,7 +66,11 @@ class GameResult:
             file.write("\n")
 
     def to_dict(self):
-        return self.__dict__
+        data = self.__dict__.copy()
+        # Si result est une instance d'AssignResult, on le convertit en dictionnaire
+        if isinstance(self.result, AssignResult):
+            data['result'] = self.result.to_dict()
+        return data
 
 class Game:
     init_count = 0
@@ -112,15 +97,15 @@ class Game:
         self.players_path = pygame.sprite.Group()
 
         # Planner
-        if Game.init_count > 350:
+        if Game.init_count > 400:
             pygame.quit()
 
-        if Game.init_count < 300:
+        if Game.init_count < 400:
             self.assignement_method = AssignMethodsEnum.DIAS.name
             self.reward_factor = 1
             self.random_init = True
 
-        if Game.init_count < 250:
+        if Game.init_count < 300:
             self.assignement_method = AssignMethodsEnum.DIAS.name
             self.reward_factor = 0.95
             self.random_init = True
@@ -130,20 +115,10 @@ class Game:
             self.reward_factor = 1
             self.random_init = False
 
-        if Game.init_count < 150:
+        if Game.init_count < 100:
             self.assignement_method = AssignMethodsEnum.DIAS.name
             self.reward_factor = 0.95
             self.random_init = False
-
-        if Game.init_count < 100:
-            self.assignement_method = AssignMethodsEnum.SSI.name
-            self.reward_factor = 1
-            self.random_init = True
-
-        if Game.init_count < 50:
-            self.assignement_method = AssignMethodsEnum.SSI.name
-            self.reward_factor = 0.95
-            self.random_init = True
 
         self.nb_round = 10 #for dias
 
@@ -169,38 +144,28 @@ class Game:
             # dt
             dt = self.clock.tick(60)
 
-            if self.planner.is_tasks_all_done() and self.randomize_position:
-                self.end_time = time.time()  # Fin du chronomètre
-                elapsed_time = self.end_time - self.start_time
-                self.game_result.resolution_time = elapsed_time
-
-                print(self.game_result)
-                Game.game_results.append(self.game_result.to_dict())
-                Game.init_count += 1
-
-                # Sauvegarde après chaque ajout
-                with open('result.txt', "w") as file:
-                    json.dump(Game.game_results, file, indent=4)
-
-                self.__init__()
-
             if self.assign_tasks_flag:
                 self.assign_tasks_flag = False
                 self.menu.display_compute = True  # Affiche un indicateur de calcul en cours
 
-                def assign_tasks_thread():
-                    self.game_result.evolution = self.planner.assign_tasks(self.planner.tasks, list(self.players), self.assignement_method, self.nb_round, self.random_init)
-                    self.menu.display_compute = False  # Cache l'indicateur
-                    self.menu.enable_start = True  # Active le bouton Start
+                self.game_result.result = self.planner.assign_tasks(self.planner.tasks, list(self.players), self.assignement_method, self.nb_round, self.random_init)
+                self.menu.display_compute = False  # Cache l'indicateur
+                self.menu.enable_start = True  # Active le bouton Start
 
-                    if self.randomize_position:
-                        self.menu.game_started = True
-                        self.start_game()
-                        self.start_time = time.time()  # Démarrage du chronomètre
+                if self.randomize_position:
                     
-                    self.game_result.compute_assignment_result(self.players, self.planner.tasks)
+                        self.game_result.compute_assignment_result(self.players, self.planner.tasks)
+                        Game.game_results.append(self.game_result.to_dict())
+                        Game.init_count += 1
 
-                threading.Thread(target=assign_tasks_thread, daemon=True).start()
+                        print(json.dumps(self.game_result.to_dict(), indent=4))
+
+                        # Sauvegarde après chaque ajout
+                        with open('result.txt', "w") as file:
+                            json.dump(Game.game_results, file, indent=4)
+
+                        self.__init__()
+
 
             # event loop 
             for event in pygame.event.get():

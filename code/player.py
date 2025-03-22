@@ -23,12 +23,12 @@ class Player(pygame.sprite.Sprite):
         Player._id_counter += 1
 
         # properties
-        self.speed = 10
+        self.speed = 3
         self.damage_per_blow = {
             "mushroom": 50,
             "tree": 20
         }
-        self.blow_per_second = 3
+        self.blow_per_second = 1
         self.reward_factor = reward_factor
 
         # graphics
@@ -49,6 +49,7 @@ class Player(pygame.sprite.Sprite):
         self.planned_path: list = []
         self.total_utility = 0
         self.communication_number = 0
+        self.planned_time = 0
 
         self.task_timer = 0  # Timer for health reduction
 
@@ -61,14 +62,26 @@ class Player(pygame.sprite.Sprite):
         self.tasks.append(task)
         self.planned_path = self.compute_shortest_path(self.tasks.copy())
         self.total_utility = self.compute_total_utility()
+        self.planned_time = self.compute_planned_time()
 
     def remove_task(self, task:Task):
         self.tasks.remove(task)
         task.item.color = (255, 255, 255)
         self.planned_path = self.compute_shortest_path(self.tasks.copy())
         self.total_utility = self.compute_total_utility()
+        self.planned_time = self.compute_planned_time()
 
     # utility functions
+    def compute_planned_time(self):
+        total_distance = len(sum(self.planned_path, []))
+        total_time_move = total_distance / self.speed
+
+        total_time_task = 0
+        for task in self.tasks:
+            total_time_task+= (100/self.damage_per_blow[task.item.type] ) / self.blow_per_second
+
+        return total_time_task +  total_time_move
+
     def compute_total_utility(self):
         total_distance = len(sum(self.planned_path, []))
 
